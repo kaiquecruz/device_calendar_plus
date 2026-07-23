@@ -1,4 +1,4 @@
-## Unreleased
+## 0.7.1 - 2026-07-22
 
 ### Added
 - Event maps include `colorHex` read from `Events.EVENT_COLOR` when the event
