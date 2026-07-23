@@ -499,22 +499,38 @@ void main() {
       // getEvent should also return the url
       final fetched = await plugin.getEvent(eventId);
       expect(fetched?.url, eventUrl);
+    });
 
+    test('getEvent leaves colorHex null when the event has no custom color',
+        () async {
       // Plugin-created events have no custom per-event color: Android only
       // sets EVENT_COLOR when something external (e.g. Google Calendar)
       // assigns one, and iOS has no per-event color at all — so colorHex is
       // null on both platforms.
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final calendarId = await plugin.createCalendar(
+        name: 'Event Color Null Test $timestamp',
+      );
+      createdCalendarIds.add(calendarId);
+
+      final now = DateTime.now();
+      final eventId = await plugin.createEvent(
+        calendarId: calendarId,
+        title: 'Event Without Custom Color',
+        startDate: DateTime(now.year, now.month, now.day, 13, 0),
+        endDate: DateTime(now.year, now.month, now.day, 14, 0),
+      );
+      expect(eventId, isNotEmpty);
+
+      final fetched = await plugin.getEvent(eventId);
+      expect(fetched, isNotNull);
       expect(fetched?.colorHex, isNull);
+      expect(fetched?.color, isNull);
     });
 
-    test('getEvent returns colorHex when EVENT_COLOR is set (Android)',
-        () async {
+    test('Read colorHex when EVENT_COLOR is set (Android)', () async {
       // Android-only: iOS has no per-event color, so there is nothing to
-      // seed there (the null contract is asserted above).
-      if (!Platform.isAndroid) {
-        return;
-      }
-
+      // seed there (the null contract is asserted in the test above).
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final calendarId = await plugin.createCalendar(
         name: 'Event Color Test $timestamp',
@@ -522,11 +538,13 @@ void main() {
       createdCalendarIds.add(calendarId);
 
       final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, now.day, 13, 0);
+      final endDate = DateTime(now.year, now.month, now.day, 14, 0);
       final eventId = await plugin.createEvent(
         calendarId: calendarId,
         title: 'Event With Custom Color',
-        startDate: DateTime(now.year, now.month, now.day, 13, 0),
-        endDate: DateTime(now.year, now.month, now.day, 14, 0),
+        startDate: startDate,
+        endDate: endDate,
       );
       expect(eventId, isNotEmpty);
 
@@ -542,10 +560,23 @@ void main() {
       });
       expect(updated, 1);
 
+      // getEvent reads via the Events projection.
       final fetched = await plugin.getEvent(eventId);
       expect(fetched?.colorHex, '#FF0000');
       expect(fetched?.color, const Color(0xFFFF0000));
-    });
+
+      // listEvents reads via the separate Instances projection, so assert
+      // through it too — dropping EVENT_COLOR from either read path should
+      // fail this test.
+      final events = await plugin.listEvents(
+        startDate.subtract(Duration(hours: 1)),
+        endDate.add(Duration(hours: 1)),
+        calendarIds: [calendarId],
+      );
+      final instance = events.firstWhere((e) => e.eventId == eventId);
+      expect(instance.colorHex, '#FF0000');
+      expect(instance.color, const Color(0xFFFF0000));
+    }, skip: !Platform.isAndroid);
 
     test('Create Event without URL leaves url null', () async {
       // Sanity check: omitting url must not accidentally populate the field.

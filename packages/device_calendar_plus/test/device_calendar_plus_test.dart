@@ -1,5 +1,3 @@
-import 'dart:ui' show Color;
-
 import 'package:device_calendar_plus/device_calendar_plus.dart';
 import 'package:device_calendar_plus_platform_interface/device_calendar_plus_platform_interface.dart';
 import 'package:flutter/services.dart';
@@ -1628,14 +1626,9 @@ void main() {
       });
     });
 
-    group('colorHex', () {
-      // Hex parsing itself is covered once, in the Calendar.color group
-      // (Event.color delegates to the same shared helper).
-      test('fromMap carries colorHex through to the model', () {
-        final event = Event.fromMap(baseMap()..['colorHex'] = '#FF0000');
-        expect(event.colorHex, '#FF0000');
-        expect(Event.fromMap(baseMap()).colorHex, isNull);
-      });
-    });
+    // colorHex is a branchless fromMap passthrough (testing.md: don't
+    // unit-test trivial model properties). The read path is covered by the
+    // colorHex integration tests, and hex parsing by the Calendar.color
+    // group above (Event.color delegates to the same shared helper).
   });
 }
