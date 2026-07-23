@@ -1,5 +1,12 @@
 ## Unreleased
 
+### Added
+- `Event.colorHex` — the event's custom color as `#RRGGBB`, with a parsed
+  `Event.color` getter (read-only, mirrors `Calendar.colorHex`). Android reads
+  the event's custom color (`EVENT_COLOR`), `null` when the event uses its
+  calendar's color; iOS always reports `null` (EventKit has no per-event
+  color). No write support (#117).
+
 ### Changed
 - **Breaking:** `WeeklyRecurrence`'s `wkst` field and constructor parameter are
   renamed to `weekStart`, matching the spelled-out naming of the other

@@ -1,5 +1,3 @@
-import 'dart:ui' show Color;
-
 import 'package:device_calendar_plus/device_calendar_plus.dart';
 import 'package:device_calendar_plus_platform_interface/device_calendar_plus_platform_interface.dart';
 import 'package:flutter/services.dart';
@@ -1546,6 +1544,8 @@ void main() {
     });
   });
 
+  // Single parsing suite for the shared colorFromHex helper, which also backs
+  // Event.color (a trivial delegating getter, so it isn't re-tested there).
   group('Calendar.color', () {
     Calendar cal({String? colorHex}) => Calendar(
           id: '1',
@@ -1625,5 +1625,10 @@ void main() {
         expect(event.toMap().containsKey('reminders'), isFalse);
       });
     });
+
+    // colorHex is a branchless fromMap passthrough (testing.md: don't
+    // unit-test trivial model properties). The read path is covered by the
+    // colorHex integration tests, and hex parsing by the Calendar.color
+    // group above (Event.color delegates to the same shared helper).
   });
 }
