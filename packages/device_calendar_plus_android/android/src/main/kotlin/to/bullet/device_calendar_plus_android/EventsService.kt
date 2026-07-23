@@ -110,8 +110,7 @@ class EventsService(
                         CalendarContract.Instances.STATUS,
                         CalendarContract.Instances.EVENT_TIMEZONE,
                         CalendarContract.Instances.RRULE,
-                        urlColumn = CalendarContract.Instances.CUSTOM_APP_URI,
-                        eventColorColumn = CalendarContract.Instances.EVENT_COLOR
+                        urlColumn = CalendarContract.Instances.CUSTOM_APP_URI
                     )
                     events.add(eventMap)
                 }
@@ -207,8 +206,7 @@ class EventsService(
         recurrenceRuleColumn: String,
         createdColumn: String? = null,
         lastModifiedColumn: String? = null,
-        urlColumn: String? = null,
-        eventColorColumn: String? = null
+        urlColumn: String? = null
     ): Map<String, Any> {
         val eventIdIndex = cursor.getColumnIndex(eventIdColumn)
         val calendarIdIndex = cursor.getColumnIndex(calendarIdColumn)
@@ -225,7 +223,10 @@ class EventsService(
         val createdIndex = if (createdColumn != null) cursor.getColumnIndex(createdColumn) else -1
         val lastModifiedIndex = if (lastModifiedColumn != null) cursor.getColumnIndex(lastModifiedColumn) else -1
         val urlIndex = if (urlColumn != null) cursor.getColumnIndex(urlColumn) else -1
-        val eventColorIndex = if (eventColorColumn != null) cursor.getColumnIndex(eventColorColumn) else -1
+        // Instances implements EventsColumns, so EVENT_COLOR is the same
+        // column name through both content URIs — no per-call-site parameter
+        // needed. The index >= 0 guard below covers projections without it.
+        val eventColorIndex = cursor.getColumnIndex(CalendarContract.Events.EVENT_COLOR)
         
         val eventId = cursor.getString(eventIdIndex)
         val calendarId = cursor.getString(calendarIdIndex)
@@ -510,8 +511,7 @@ class EventsService(
                             CalendarContract.Events.STATUS,
                             CalendarContract.Events.EVENT_TIMEZONE,
                             CalendarContract.Events.RRULE,
-                            urlColumn = CalendarContract.Events.CUSTOM_APP_URI,
-                            eventColorColumn = CalendarContract.Events.EVENT_COLOR
+                            urlColumn = CalendarContract.Events.CUSTOM_APP_URI
                         )
                         return Result.success(eventMap)
                     } else {

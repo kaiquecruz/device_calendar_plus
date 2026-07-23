@@ -514,11 +514,13 @@ void main() {
       createdCalendarIds.add(calendarId);
 
       final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, now.day, 13, 0);
+      final endDate = DateTime(now.year, now.month, now.day, 14, 0);
       final eventId = await plugin.createEvent(
         calendarId: calendarId,
         title: 'Event Without Custom Color',
-        startDate: DateTime(now.year, now.month, now.day, 13, 0),
-        endDate: DateTime(now.year, now.month, now.day, 14, 0),
+        startDate: startDate,
+        endDate: endDate,
       );
       expect(eventId, isNotEmpty);
 
@@ -526,6 +528,19 @@ void main() {
       expect(fetched, isNotNull);
       expect(fetched?.colorHex, isNull);
       expect(fetched?.color, isNull);
+
+      // listEvents reads via the separate Instances projection (Android), so
+      // assert the null contract through it too — an unset EVENT_COLOR that
+      // reads as 0 instead of NULL there would surface a spurious '#000000'
+      // via listEvents while getEvent stays null.
+      final events = await plugin.listEvents(
+        startDate.subtract(Duration(hours: 1)),
+        endDate.add(Duration(hours: 1)),
+        calendarIds: [calendarId],
+      );
+      final instance = events.firstWhere((e) => e.eventId == eventId);
+      expect(instance.colorHex, isNull);
+      expect(instance.color, isNull);
     });
 
     test('Read colorHex when EVENT_COLOR is set (Android)', () async {
