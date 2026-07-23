@@ -1625,5 +1625,24 @@ void main() {
         expect(event.toMap().containsKey('reminders'), isFalse);
       });
     });
+
+    group('color', () {
+      test('parses colorHex into a Color', () {
+        final event = Event.fromMap(baseMap()..['colorHex'] = '#FF0000');
+        expect(event.colorHex, '#FF0000');
+        expect(event.color, const Color(0xFFFF0000));
+      });
+
+      test('is null when the platform reports no colorHex', () {
+        final event = Event.fromMap(baseMap());
+        expect(event.colorHex, isNull);
+        expect(event.color, isNull);
+      });
+
+      test('is null for an unparseable colorHex', () {
+        final event = Event.fromMap(baseMap()..['colorHex'] = 'notacolor');
+        expect(event.color, isNull);
+      });
+    });
   });
 }

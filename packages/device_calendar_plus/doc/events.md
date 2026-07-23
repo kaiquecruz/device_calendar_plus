@@ -62,6 +62,18 @@ final event = await plugin.getEvent(id); // null if not found
 `id` may be an event ID (the master, for a recurring series) or an instance ID
 (a specific occurrence). See [recurring-events.md](recurring-events.md).
 
+## Event color (read-only)
+
+`Event.colorHex` is the event's custom color as `#RRGGBB` (with a parsed
+`Event.color` getter). It is read-only and platform-specific:
+
+- **Android** reads the event's custom color (`EVENT_COLOR`), e.g. one set in
+  Google Calendar. It's `null` when the event just uses its calendar's color.
+- **iOS** always reports `null` — EventKit has no per-event color.
+
+There is no write support; `createEvent`/`updateEvent` don't accept a color.
+For the calendar's own color, see [calendars.md](calendars.md).
+
 ## Update
 
 Pass an event ID to update the event (the whole series when recurring), or an

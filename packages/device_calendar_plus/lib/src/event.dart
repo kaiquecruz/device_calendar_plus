@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:flutter/foundation.dart';
 
 import 'attendee.dart';
@@ -87,6 +89,25 @@ class Event {
   /// through the plugin on Android.
   final String? url;
 
+  /// Custom per-event color as a hex string in `#RRGGBB` format (read-only).
+  ///
+  /// Android only: read from the event's custom color when one is set (for
+  /// example by Google Calendar), `null` when the event uses its calendar's
+  /// color. iOS always reports `null` — EventKit has no per-event color.
+  ///
+  /// The plugin does not support writing this field.
+  final String? colorHex;
+
+  /// Parsed [colorHex] as a Flutter [Color], or `null` if absent or unparseable.
+  Color? get color {
+    final hex = colorHex;
+    if (hex == null) return null;
+    final cleaned = hex.startsWith('#') ? hex.substring(1) : hex;
+    final value = int.tryParse(cleaned, radix: 16);
+    if (value == null) return null;
+    return Color(cleaned.length == 6 ? value | 0xFF000000 : value);
+  }
+
   Event({
     required this.eventId,
     required this.instanceId,
@@ -105,6 +126,7 @@ class Event {
     this.attendees,
     this.reminders,
     this.url,
+    this.colorHex,
   });
 
   /// Creates an Event from a map returned by the platform.
@@ -136,6 +158,7 @@ class Event {
           ?.map((m) => Duration(minutes: (m as num).toInt()))
           .toList(),
       url: map['url'] as String?,
+      colorHex: map['colorHex'] as String?,
     );
   }
 
@@ -158,6 +181,7 @@ class Event {
     if (location != null) map['location'] = location;
     if (timeZone != null) map['timeZone'] = timeZone;
     if (url != null) map['url'] = url;
+    if (colorHex != null) map['colorHex'] = colorHex;
     if (recurrenceRule != null) {
       map['recurrenceRule'] = recurrenceRule!.rruleString;
     }
@@ -199,7 +223,8 @@ class Event {
         other.recurrenceRule == recurrenceRule &&
         listEquals(other.attendees, attendees) &&
         listEquals(other.reminders, reminders) &&
-        other.url == url;
+        other.url == url &&
+        other.colorHex == colorHex;
   }
 
   @override
@@ -222,6 +247,7 @@ class Event {
       attendees != null ? Object.hashAll(attendees!) : null,
       reminders != null ? Object.hashAll(reminders!) : null,
       url,
+      colorHex,
     );
   }
 }

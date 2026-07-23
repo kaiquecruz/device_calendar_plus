@@ -2,9 +2,15 @@
 
 ## Cross-platform consistency
 
-Only expose features that work identically on both iOS and Android. If a
-capability is read-only on one platform, it's read-only in the plugin. If it
-doesn't exist on one platform, don't add it.
+For **writes and mutations**, only expose features that work identically on
+both iOS and Android. If a capability is read-only on one platform, it's
+read-only in the plugin. No write support unless both platforms have it.
+
+**Read-only data** is exempt: a value that only one platform provides MAY be
+exposed as a nullable platform-specific field (e.g. `Event.colorHex`, which
+Android reads from `EVENT_COLOR` and iOS always reports as `null`). Document
+the per-platform behaviour on the field, and don't add write support unless
+both platforms have it.
 
 When a behaviour *can* be made consistent but the platforms naturally differ,
 conform Android to iOS. iOS is the priority platform — it has most of the

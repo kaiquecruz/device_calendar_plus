@@ -53,7 +53,8 @@ class EventsService(
             CalendarContract.Instances.STATUS,
             CalendarContract.Instances.EVENT_TIMEZONE,
             CalendarContract.Instances.RRULE,
-            CalendarContract.Instances.CUSTOM_APP_URI
+            CalendarContract.Instances.CUSTOM_APP_URI,
+            CalendarContract.Instances.EVENT_COLOR
         )
 
         val selections = mutableListOf<String>()
@@ -109,7 +110,8 @@ class EventsService(
                         CalendarContract.Instances.STATUS,
                         CalendarContract.Instances.EVENT_TIMEZONE,
                         CalendarContract.Instances.RRULE,
-                        urlColumn = CalendarContract.Instances.CUSTOM_APP_URI
+                        urlColumn = CalendarContract.Instances.CUSTOM_APP_URI,
+                        eventColorColumn = CalendarContract.Instances.EVENT_COLOR
                     )
                     events.add(eventMap)
                 }
@@ -205,7 +207,8 @@ class EventsService(
         recurrenceRuleColumn: String,
         createdColumn: String? = null,
         lastModifiedColumn: String? = null,
-        urlColumn: String? = null
+        urlColumn: String? = null,
+        eventColorColumn: String? = null
     ): Map<String, Any> {
         val eventIdIndex = cursor.getColumnIndex(eventIdColumn)
         val calendarIdIndex = cursor.getColumnIndex(calendarIdColumn)
@@ -222,6 +225,7 @@ class EventsService(
         val createdIndex = if (createdColumn != null) cursor.getColumnIndex(createdColumn) else -1
         val lastModifiedIndex = if (lastModifiedColumn != null) cursor.getColumnIndex(lastModifiedColumn) else -1
         val urlIndex = if (urlColumn != null) cursor.getColumnIndex(urlColumn) else -1
+        val eventColorIndex = if (eventColorColumn != null) cursor.getColumnIndex(eventColorColumn) else -1
         
         val eventId = cursor.getString(eventIdIndex)
         val calendarId = cursor.getString(calendarIdIndex)
@@ -238,6 +242,7 @@ class EventsService(
         val createdDate = if (createdIndex >= 0 && !cursor.isNull(createdIndex)) cursor.getLong(createdIndex) else null
         val lastModifiedDate = if (lastModifiedIndex >= 0 && !cursor.isNull(lastModifiedIndex)) cursor.getLong(lastModifiedIndex) else null
         val url = if (urlIndex >= 0 && !cursor.isNull(urlIndex)) cursor.getString(urlIndex) else null
+        val eventColor = if (eventColorIndex >= 0 && !cursor.isNull(eventColorIndex)) cursor.getInt(eventColorIndex) else null
         
         // Generate instanceId using RAW timestamps before any modifications
         val instanceId: String = if (recurrenceRule != null) {
@@ -296,6 +301,12 @@ class EventsService(
         // Add URL if available (Android: CUSTOM_APP_URI)
         if (url != null) {
             eventMap["url"] = url
+        }
+
+        // Custom per-event color (EVENT_COLOR), read-only. Null when the event
+        // uses the calendar's color.
+        if (eventColor != null) {
+            eventMap["colorHex"] = ColorHelper.colorToHex(eventColor)
         }
 
         // Query attendees
@@ -469,7 +480,8 @@ class EventsService(
                 CalendarContract.Events.STATUS,
                 CalendarContract.Events.EVENT_TIMEZONE,
                 CalendarContract.Events.RRULE,
-                CalendarContract.Events.CUSTOM_APP_URI
+                CalendarContract.Events.CUSTOM_APP_URI,
+                CalendarContract.Events.EVENT_COLOR
             )
             
             val selection = "${CalendarContract.Events._ID} = ?"
@@ -498,7 +510,8 @@ class EventsService(
                             CalendarContract.Events.STATUS,
                             CalendarContract.Events.EVENT_TIMEZONE,
                             CalendarContract.Events.RRULE,
-                            urlColumn = CalendarContract.Events.CUSTOM_APP_URI
+                            urlColumn = CalendarContract.Events.CUSTOM_APP_URI,
+                            eventColorColumn = CalendarContract.Events.EVENT_COLOR
                         )
                         return Result.success(eventMap)
                     } else {

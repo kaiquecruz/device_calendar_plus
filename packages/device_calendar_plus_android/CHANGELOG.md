@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+- Event maps include `colorHex` read from `Events.EVENT_COLOR` when the event
+  has a custom color; absent otherwise (#117).
+
 ## 0.7.0 - 2026-06-17
 
 ### Added
