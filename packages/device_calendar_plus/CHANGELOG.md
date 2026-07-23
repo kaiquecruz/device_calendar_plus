@@ -1,4 +1,4 @@
-## Unreleased
+## 0.8.0 - 2026-07-22
 
 ### Added
 - `Event.colorHex` — the event's custom color as `#RRGGBB`, with a parsed
