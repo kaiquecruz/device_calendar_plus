@@ -501,8 +501,9 @@ void main() {
       expect(fetched?.url, eventUrl);
     });
 
-    test('getEvent leaves colorHex null when the event has no custom color',
-        () async {
+    test(
+        'colorHex is null via getEvent and listEvents when the event has no '
+        'custom color', () async {
       // Plugin-created events have no custom per-event color: Android only
       // sets EVENT_COLOR when something external (e.g. Google Calendar)
       // assigns one, and iOS has no per-event color at all — so colorHex is
