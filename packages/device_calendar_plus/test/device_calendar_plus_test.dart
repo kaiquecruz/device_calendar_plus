@@ -1546,6 +1546,8 @@ void main() {
     });
   });
 
+  // Single parsing suite for the shared colorFromHex helper, which also backs
+  // Event.color (a trivial delegating getter, so it isn't re-tested there).
   group('Calendar.color', () {
     Calendar cal({String? colorHex}) => Calendar(
           id: '1',
@@ -1626,22 +1628,13 @@ void main() {
       });
     });
 
-    group('color', () {
-      test('parses colorHex into a Color', () {
+    group('colorHex', () {
+      // Hex parsing itself is covered once, in the Calendar.color group
+      // (Event.color delegates to the same shared helper).
+      test('fromMap carries colorHex through to the model', () {
         final event = Event.fromMap(baseMap()..['colorHex'] = '#FF0000');
         expect(event.colorHex, '#FF0000');
-        expect(event.color, const Color(0xFFFF0000));
-      });
-
-      test('is null when the platform reports no colorHex', () {
-        final event = Event.fromMap(baseMap());
-        expect(event.colorHex, isNull);
-        expect(event.color, isNull);
-      });
-
-      test('is null for an unparseable colorHex', () {
-        final event = Event.fromMap(baseMap()..['colorHex'] = 'notacolor');
-        expect(event.color, isNull);
+        expect(Event.fromMap(baseMap()).colorHex, isNull);
       });
     });
   });

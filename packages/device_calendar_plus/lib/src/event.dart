@@ -3,6 +3,7 @@ import 'dart:ui' show Color;
 import 'package:flutter/foundation.dart';
 
 import 'attendee.dart';
+import 'color_hex.dart';
 import 'event_availability.dart';
 import 'event_status.dart';
 import 'recurrence_rule.dart';
@@ -99,14 +100,7 @@ class Event {
   final String? colorHex;
 
   /// Parsed [colorHex] as a Flutter [Color], or `null` if absent or unparseable.
-  Color? get color {
-    final hex = colorHex;
-    if (hex == null) return null;
-    final cleaned = hex.startsWith('#') ? hex.substring(1) : hex;
-    final value = int.tryParse(cleaned, radix: 16);
-    if (value == null) return null;
-    return Color(cleaned.length == 6 ? value | 0xFF000000 : value);
-  }
+  Color? get color => colorFromHex(colorHex);
 
   Event({
     required this.eventId,

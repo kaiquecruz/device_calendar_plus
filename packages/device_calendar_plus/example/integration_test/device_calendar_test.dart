@@ -1,6 +1,8 @@
 import 'dart:io' show Platform;
+import 'dart:ui' show Color;
 
 import 'package:device_calendar_plus/device_calendar_plus.dart';
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -497,6 +499,52 @@ void main() {
       // getEvent should also return the url
       final fetched = await plugin.getEvent(eventId);
       expect(fetched?.url, eventUrl);
+
+      // Plugin-created events have no custom per-event color: Android only
+      // sets EVENT_COLOR when something external (e.g. Google Calendar)
+      // assigns one, and iOS has no per-event color at all — so colorHex is
+      // null on both platforms.
+      expect(fetched?.colorHex, isNull);
+    });
+
+    test('getEvent returns colorHex when EVENT_COLOR is set (Android)',
+        () async {
+      // Android-only: iOS has no per-event color, so there is nothing to
+      // seed there (the null contract is asserted above).
+      if (!Platform.isAndroid) {
+        return;
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final calendarId = await plugin.createCalendar(
+        name: 'Event Color Test $timestamp',
+      );
+      createdCalendarIds.add(calendarId);
+
+      final now = DateTime.now();
+      final eventId = await plugin.createEvent(
+        calendarId: calendarId,
+        title: 'Event With Custom Color',
+        startDate: DateTime(now.year, now.month, now.day, 13, 0),
+        endDate: DateTime(now.year, now.month, now.day, 14, 0),
+      );
+      expect(eventId, isNotEmpty);
+
+      // EVENT_COLOR is sync-adapter-owned, so the plugin can't write it. The
+      // example app exposes a test-only channel that stamps it directly via
+      // ContentResolver using a sync-adapter URI on the local test calendar,
+      // simulating a color set externally (e.g. in Google Calendar).
+      final updated = await const MethodChannel(
+        'to.bullet.device_calendar_plus_example/test',
+      ).invokeMethod<int>('setEventColor', {
+        'eventId': eventId,
+        'color': 0xFFFF0000,
+      });
+      expect(updated, 1);
+
+      final fetched = await plugin.getEvent(eventId);
+      expect(fetched?.colorHex, '#FF0000');
+      expect(fetched?.color, const Color(0xFFFF0000));
     });
 
     test('Create Event without URL leaves url null', () async {

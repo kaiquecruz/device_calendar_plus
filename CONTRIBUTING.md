@@ -30,9 +30,9 @@ These conventions apply across the entire plugin. Any new feature that deals wit
 
 Both platform implementations must return data in the **same map shape**. The platform interface defines this contract — if a field exists in the Dart model's `fromMap()`, both platforms must populate it.
 
-- Don't add a field to the Dart model unless both platforms return it.
+- Don't add a field to the Dart model unless both platforms return it. **Read-only data is exempt:** a value that only one platform provides may be exposed as a nullable platform-specific field (e.g. `Event.colorHex`, which Android reads from `EVENT_COLOR` and iOS always reports as `null`). Document the per-platform behaviour on the field, and don't add write support unless both platforms have it.
 - Don't change the map shape for one platform without updating the other.
-- If a field is platform-specific, handle it through typed platform option classes (see `CreateCalendarOptionsAndroid` for an example).
+- If a platform-specific field needs write configuration, handle it through typed platform option classes (see `CreateCalendarOptionsAndroid` for an example).
 
 ## Architecture
 
@@ -43,7 +43,7 @@ This is a federated plugin. Changes to the API surface typically touch all four 
 3. **`device_calendar_plus_ios`** — Implement for iOS (Swift, EventKit).
 4. **`device_calendar_plus`** — Expose through the public Dart API with validation and documentation.
 
-If you're adding a new field to an existing model, you need to handle both the **write path** (Dart → native) and the **read path** (native → Dart). Both must be tested.
+If you're adding a new field to an existing model, you need to handle both the **write path** (Dart → native) and the **read path** (native → Dart). Both must be tested. (Read-only fields only have a read path — test that.)
 
 ## Testing
 
