@@ -147,8 +147,10 @@ class DeviceCalendarPlusAndroidPlugin :
     private fun handleOpenAppSettings(result: Result) {
         val currentActivity = activity
         if (currentActivity == null) {
+            // Same condition as requestPermissions' no-Activity failure, so use
+            // the same code — callers shouldn't handle two errors for one state.
             result.error(
-                PlatformExceptionCodes.UNKNOWN_ERROR,
+                PlatformExceptionCodes.OPERATION_FAILED,
                 "Activity not available",
                 null
             )

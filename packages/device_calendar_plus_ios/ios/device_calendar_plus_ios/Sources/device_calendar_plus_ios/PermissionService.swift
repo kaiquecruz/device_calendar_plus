@@ -77,6 +77,15 @@ class PermissionService {
     return PermissionError(code: PlatformExceptionCodes.permissionsNotDeclared, message: errorMessage)
   }
 
+  private func missingFullAccessDescriptionError() -> PermissionError {
+    var errorMessage = "Full-access calendar usage description not declared in Info.plist.\n\n"
+    errorMessage += "Add the following to ios/Runner/Info.plist:\n"
+    errorMessage += "<key>NSCalendarsFullAccessUsageDescription</key>\n"
+    errorMessage += "<string>Full access to view and edit your calendar events.</string>"
+
+    return PermissionError(code: PlatformExceptionCodes.permissionsNotDeclared, message: errorMessage)
+  }
+
   private func missingUsageDescriptionError() -> PermissionError {
     var errorMessage = "Calendar usage description not declared in Info.plist.\n\n"
     errorMessage += "Add the following to ios/Runner/Info.plist:\n"
@@ -90,14 +99,20 @@ class PermissionService {
 
   /// Verifies the Info.plist declares the usage description the request needs.
   ///
-  /// A write-only request on iOS 17+ goes through `requestWriteOnlyAccessToEvents`,
-  /// which **requires** `NSCalendarsWriteOnlyAccessUsageDescription` — without it
-  /// the OS raises an exception, so we surface a clear error instead of crashing.
-  /// Every other path uses `NSCalendarsUsageDescription`.
+  /// On iOS 17+ each request variant **requires** its own key: full access
+  /// (`requestFullAccessToEvents`) needs `NSCalendarsFullAccessUsageDescription`
+  /// and write-only needs `NSCalendarsWriteOnlyAccessUsageDescription` — the
+  /// legacy `NSCalendarsUsageDescription` no longer satisfies either, and
+  /// without the matching key the OS raises an exception, so we surface a
+  /// clear error instead of crashing. iOS 16 and below uses only the legacy key.
   private func checkUsageDescriptionDeclared(writeOnly: Bool) -> PermissionError? {
-    if writeOnly, #available(iOS 17.0, *) {
-      return isDescriptionDeclared("NSCalendarsWriteOnlyAccessUsageDescription")
-        ? nil : missingWriteOnlyDescriptionError()
+    if #available(iOS 17.0, *) {
+      if writeOnly {
+        return isDescriptionDeclared("NSCalendarsWriteOnlyAccessUsageDescription")
+          ? nil : missingWriteOnlyDescriptionError()
+      }
+      return isDescriptionDeclared("NSCalendarsFullAccessUsageDescription")
+        ? nil : missingFullAccessDescriptionError()
     }
 
     return isDescriptionDeclared("NSCalendarsUsageDescription")
@@ -142,9 +157,11 @@ class PermissionService {
   
   func hasPermissions() -> Result<String, PermissionError> {
     // A status check triggers no prompt, so any declared calendar usage
-    // description — full or write-only — satisfies the configuration guard. An
-    // add-only app that declares only the write-only key can still check status.
+    // description — legacy, full-access, or write-only — satisfies the
+    // configuration guard. An add-only app that declares only the write-only
+    // key can still check status.
     guard isDescriptionDeclared("NSCalendarsUsageDescription")
+      || isDescriptionDeclared("NSCalendarsFullAccessUsageDescription")
       || isDescriptionDeclared("NSCalendarsWriteOnlyAccessUsageDescription") else {
       return .failure(missingUsageDescriptionError())
     }

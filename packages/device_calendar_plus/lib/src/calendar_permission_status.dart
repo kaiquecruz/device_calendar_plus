@@ -3,9 +3,15 @@ enum CalendarPermissionStatus {
   /// Full read and write access to calendars.
   granted,
 
-  /// Permission has been permanently denied — the system dialog can no longer
-  /// be shown (on Android, the user chose "Don't ask again"). Use
-  /// [DeviceCalendar.openAppSettings] to send the user to settings.
+  /// Permission was denied. Use [DeviceCalendar.openAppSettings] to send the
+  /// user to settings.
+  ///
+  /// From [DeviceCalendar.hasPermissions] this means a *permanent* denial —
+  /// the system dialog can no longer be shown (on Android, the user chose
+  /// "Don't ask again"). [DeviceCalendar.requestPermissions] additionally
+  /// reports a just-declined prompt as [denied] on both platforms; on Android
+  /// that first decline is still re-askable, so a later [DeviceCalendar.hasPermissions]
+  /// there reports [notDetermined] rather than [denied].
   denied,
 
   /// Write-only access — add events without reading existing data. Request it

@@ -421,6 +421,16 @@ class EventsService {
   private func resolveCalendar(calendarId: String?) -> Result<EKCalendar, CalendarError> {
     if let calendarId = calendarId {
       guard let calendar = eventStore.calendar(withIdentifier: calendarId) else {
+        // Under write-only access the store can't look calendars up at all
+        // (only defaultCalendarForNewEvents is reachable), so the honest error
+        // is the missing permission, not a phantom "not found".
+        guard permissionService.hasPermission(for: .full) else {
+          return .failure(CalendarError(
+            code: PlatformExceptionCodes.permissionDenied,
+            message: "Targeting a calendar by ID requires full calendar access. "
+              + "With write-only access, omit calendarId to use the default calendar."
+          ))
+        }
         return .failure(CalendarError(
           code: PlatformExceptionCodes.notFound,
           message: "Calendar with ID \(calendarId) not found"

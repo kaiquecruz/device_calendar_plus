@@ -631,7 +631,9 @@ class EventsService(
             if (location != null) intent.putExtra(CalendarContract.Events.EVENT_LOCATION, location)
             if (startDate != null) intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startDate)
             if (endDate != null) intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endDate)
-            if (isAllDay != null) intent.putExtra(CalendarContract.Events.ALL_DAY, if (isAllDay) 1 else 0)
+            // EXTRA_EVENT_ALL_DAY is a *boolean* extra — calendar apps read it
+            // with getBooleanExtra, which ignores an Integer value entirely.
+            if (isAllDay != null) intent.putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, isAllDay)
             if (recurrenceRule != null) intent.putExtra(CalendarContract.Events.RRULE, recurrenceRule)
             if (availability != null) {
                 val availabilityValue = when (availability) {
@@ -833,9 +835,14 @@ class EventsService(
      * recurring).
      */
     fun deleteEvent(eventId: String, timestamp: Long? = null): Result<Unit> {
-        // Check for write calendar permission
+        // Deleting needs the full tier (write-only covers only createEvent),
+        // which on Android means READ_CALENDAR and WRITE_CALENDAR together.
+        // Check both explicitly so a write-only grant fails here the way iOS
+        // does, instead of by whichever internal read happens to throw first.
         if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR)) {
+            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
+            android.content.pm.PackageManager.PERMISSION_GRANTED !=
+            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
             return Result.failure(
                 CalendarException(
                     PlatformExceptionCodes.PERMISSION_DENIED,
@@ -907,9 +914,14 @@ class EventsService(
         endDate: java.util.Date?,
         patch: EventFieldPatch
     ): Result<Unit> {
-        // Check for write calendar permission
+        // Updating needs the full tier (write-only covers only createEvent),
+        // which on Android means READ_CALENDAR and WRITE_CALENDAR together.
+        // Check both explicitly so a write-only grant fails here the way iOS
+        // does, instead of by whichever internal read happens to throw first.
         if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR)) {
+            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
+            android.content.pm.PackageManager.PERMISSION_GRANTED !=
+            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
             return Result.failure(
                 CalendarException(
                     PlatformExceptionCodes.PERMISSION_DENIED,
@@ -1171,8 +1183,12 @@ class EventsService(
         recurrenceRule: String?,
         patch: EventFieldPatch
     ): Result<String> {
+        // Full tier required (write-only covers only createEvent): on Android
+        // that means READ_CALENDAR and WRITE_CALENDAR together, matching iOS.
         if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR)) {
+            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
+            android.content.pm.PackageManager.PERMISSION_GRANTED !=
+            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
             return Result.failure(
                 CalendarException(
                     PlatformExceptionCodes.PERMISSION_DENIED,
@@ -1501,8 +1517,12 @@ class EventsService(
         timestamp: Long?,
         span: String
     ): Result<Unit> {
+        // Full tier required (write-only covers only createEvent): on Android
+        // that means READ_CALENDAR and WRITE_CALENDAR together, matching iOS.
         if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR)) {
+            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
+            android.content.pm.PackageManager.PERMISSION_GRANTED !=
+            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
             return Result.failure(
                 CalendarException(
                     PlatformExceptionCodes.PERMISSION_DENIED,

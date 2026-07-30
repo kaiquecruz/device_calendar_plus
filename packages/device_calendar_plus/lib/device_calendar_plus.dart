@@ -452,8 +452,10 @@ class DeviceCalendar {
   ///
   /// Omit [calendarId] (or pass `null`) to write to the device's default
   /// calendar; on Android resolving that default reads the calendar list, so it
-  /// needs full access. A non-null but empty ID is an error, as is an [endDate]
-  /// before [startDate].
+  /// needs full access. iOS mirrors that limitation from the other side: under
+  /// write-only access only the default calendar is reachable, so a named
+  /// [calendarId] requires full access there. A non-null but empty ID is an
+  /// error, as is an [endDate] before [startDate].
   ///
   /// [recurrenceRule] makes the event recurring (see
   /// [doc/recurring-events.md](https://github.com/bullet-to/device_calendar_plus/blob/main/packages/device_calendar_plus/doc/recurring-events.md)).
