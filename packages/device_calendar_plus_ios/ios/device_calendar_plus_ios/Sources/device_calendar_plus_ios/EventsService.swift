@@ -566,12 +566,19 @@ class EventsService {
     availability: String?,
     completion: @escaping (Result<EKEvent?, CalendarError>) -> Void
   ) {
-    guard permissionService.hasPermission(for: .full) else {
-      completion(.failure(CalendarError(
-        code: PlatformExceptionCodes.permissionDenied,
-        message: "Calendar permission denied. Call requestPermissions() first."
-      )))
-      return
+    // On iOS 17+ no calendar access is needed: EKEventEditViewController runs
+    // out of process and reaches the user's calendars itself. Below 17 the
+    // editor runs in-process and presents unusable without an authorized
+    // store, so the gate stays there (pre-17 access has no write-only tier —
+    // authorized means full).
+    if #unavailable(iOS 17.0) {
+      guard permissionService.hasPermission(for: .full) else {
+        completion(.failure(CalendarError(
+          code: PlatformExceptionCodes.permissionDenied,
+          message: "Calendar permission denied. Call requestPermissions() first."
+        )))
+        return
+      }
     }
 
     // If all params are nil, return nil so the editor opens blank

@@ -1,7 +1,9 @@
 # Permissions
 
 All read/write operations require calendar permission. You can request it
-yourself, or let the plugin request it on first use.
+yourself, or let the plugin request it on first use. (The one exception is
+`showCreateEventModal`, which hands off to the system editor and needs no
+permission on Android or iOS 17+.)
 
 ## Request and check
 
@@ -40,8 +42,10 @@ if (status == CalendarPermissionStatus.writeOnly ||
 }
 ```
 
-Write-only covers `createEvent` and `showCreateEventModal`. Everything else —
-reading, updating, deleting, listing calendars — needs full access. Write-only
+Write-only covers `createEvent`. Everything else — reading, updating, deleting,
+listing calendars — needs full access, except `showCreateEventModal`, which
+needs no permission at all on Android or iOS 17+ (see
+[Native UI](native-ui.md)). Write-only
 is not a ceiling: call `requestPermissions(level: CalendarAccessLevel.full)`
 later to upgrade in-app. On Android the upgrade is granted immediately with no
 second dialog (`READ_CALENDAR` and `WRITE_CALENDAR` share one permission group);

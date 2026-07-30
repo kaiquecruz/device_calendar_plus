@@ -1541,6 +1541,43 @@ void main() {
           ),
         );
       });
+
+      // Regression tests for #121: the modal needs no calendar permission on
+      // Android or iOS 17+, so the Dart layer must not gate or prompt for it.
+      test('reaches the platform when access is denied, even in auto mode',
+          () async {
+        DeviceCalendar.instance.autoPermissions = AutoPermissionMode.full;
+        mockPlatform.setPermissionStatus(CalendarPermissionStatus.denied);
+        var platformCalled = false;
+        mockPlatform.setShowCreateEventModalCallback(({
+          title,
+          startDate,
+          endDate,
+          description,
+          location,
+          isAllDay,
+          recurrenceRule,
+          availability,
+        }) {
+          platformCalled = true;
+          return Future.value();
+        });
+
+        await DeviceCalendar.instance.showCreateEventModal();
+
+        expect(platformCalled, isTrue);
+        expect(mockPlatform.requestPermissionsCallCount, 0);
+      });
+
+      test('autoPermissions never prompts for the modal, even on notDetermined',
+          () async {
+        DeviceCalendar.instance.autoPermissions = AutoPermissionMode.asNeeded;
+        mockPlatform.setPermissionStatus(CalendarPermissionStatus.notDetermined);
+
+        await DeviceCalendar.instance.showCreateEventModal();
+
+        expect(mockPlatform.requestPermissionsCallCount, 0);
+      });
     });
   });
 

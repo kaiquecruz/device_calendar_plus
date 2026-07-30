@@ -41,5 +41,12 @@ await plugin.showCreateEventModal(
 );
 ```
 
-All fields are optional. `showCreateEventModal` works with write-only access;
+All fields are optional.
+
+`showCreateEventModal` needs **no calendar permission** on Android or iOS 17+ —
+the system editor saves the event with its own access. That makes it a handy
+fallback when the user has denied access: a silent `createEvent` when granted,
+the pre-filled native form otherwise. On iOS 16 and below the editor runs
+in-process and requires full access.
+
 `showEventModal` requires full access.

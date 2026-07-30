@@ -621,16 +621,9 @@ class EventsService(
         requestCode: Int,
     ): Result<Unit> {
         return try {
-            if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-                context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
-                return Result.failure(
-                    CalendarException(
-                        PlatformExceptionCodes.PERMISSION_DENIED,
-                        "Calendar permission denied. Call requestPermissions() first."
-                    )
-                )
-            }
-
+            // No permission gate: ACTION_INSERT hands the event to the calendar
+            // app, which saves it with its own access — the docs are explicit
+            // that the caller needs neither READ_ nor WRITE_CALENDAR.
             val intent = Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI)
 
             if (title != null) intent.putExtra(CalendarContract.Events.TITLE, title)
