@@ -370,6 +370,8 @@ class MockDeviceCalendarPlusPlatform extends DeviceCalendarPlusPlatform
     _showCreateEventModalCallback = callback;
   }
 
+  int showCreateEventModalCallCount = 0;
+
   @override
   Future<void> showCreateEventModal({
     String? title,
@@ -382,6 +384,7 @@ class MockDeviceCalendarPlusPlatform extends DeviceCalendarPlusPlatform
     String? availability,
   }) async {
     if (_exceptionToThrow != null) throw _exceptionToThrow!;
+    showCreateEventModalCallCount++;
     if (_showCreateEventModalCallback != null) {
       return _showCreateEventModalCallback!(
         title: title,
@@ -1548,24 +1551,10 @@ void main() {
           () async {
         DeviceCalendar.instance.autoPermissions = AutoPermissionMode.full;
         mockPlatform.setPermissionStatus(CalendarPermissionStatus.denied);
-        var platformCalled = false;
-        mockPlatform.setShowCreateEventModalCallback(({
-          title,
-          startDate,
-          endDate,
-          description,
-          location,
-          isAllDay,
-          recurrenceRule,
-          availability,
-        }) {
-          platformCalled = true;
-          return Future.value();
-        });
 
         await DeviceCalendar.instance.showCreateEventModal();
 
-        expect(platformCalled, isTrue);
+        expect(mockPlatform.showCreateEventModalCallCount, 1);
         expect(mockPlatform.requestPermissionsCallCount, 0);
       });
 
@@ -1576,6 +1565,7 @@ void main() {
 
         await DeviceCalendar.instance.showCreateEventModal();
 
+        expect(mockPlatform.showCreateEventModalCallCount, 1);
         expect(mockPlatform.requestPermissionsCallCount, 0);
       });
     });

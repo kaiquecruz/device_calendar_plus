@@ -2,8 +2,7 @@
 
 All read/write operations require calendar permission. You can request it
 yourself, or let the plugin request it on first use. (The one exception is
-`showCreateEventModal`, which hands off to the system editor and needs no
-permission on Android or iOS 17+.)
+`showCreateEventModal` — see [Native UI](native-ui.md).)
 
 ## Request and check
 

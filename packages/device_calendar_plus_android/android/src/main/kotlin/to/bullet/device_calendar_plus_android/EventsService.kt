@@ -21,6 +21,8 @@ class EventsService(
         calendarIds: List<String>?,
         eventId: String? = null
     ): Result<List<Map<String, Any>>> {
+        readAccessFailure(context)?.let { return Result.failure(it) }
+
         val events = mutableListOf<Map<String, Any>>()
 
         val startMillis = startDate.time
@@ -444,6 +446,8 @@ class EventsService(
     }
     
     fun getEvent(eventId: String, timestamp: Long?): Result<Map<String, Any>?> {
+        readAccessFailure(context)?.let { return Result.failure(it) }
+
         if (timestamp != null) {
             // Recurring event with timestamp
             val occurrenceMillis = timestamp
@@ -653,14 +657,11 @@ class EventsService(
                     "Calendar app not found"
                 )
             )
-        } catch (e: SecurityException) {
-            Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Permission denied: ${e.message}"
-                )
-            )
         } catch (e: Exception) {
+            // No SecurityException special-case: ACTION_INSERT needs no calendar
+            // permission, so one here isn't a calendar-permission problem and
+            // mapping it to PERMISSION_DENIED would send callers down a
+            // requestPermissions loop that can't help.
             Result.failure(
                 CalendarException(
                     PlatformExceptionCodes.UNKNOWN_ERROR,
@@ -835,21 +836,7 @@ class EventsService(
      * recurring).
      */
     fun deleteEvent(eventId: String, timestamp: Long? = null): Result<Unit> {
-        // Deleting needs the full tier (write-only covers only createEvent),
-        // which on Android means READ_CALENDAR and WRITE_CALENDAR together.
-        // Check both explicitly so a write-only grant fails here the way iOS
-        // does, instead of by whichever internal read happens to throw first.
-        if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
-            android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
+        fullAccessFailure(context)?.let { return Result.failure(it) }
 
         return try {
             if (timestamp != null) {
@@ -914,21 +901,7 @@ class EventsService(
         endDate: java.util.Date?,
         patch: EventFieldPatch
     ): Result<Unit> {
-        // Updating needs the full tier (write-only covers only createEvent),
-        // which on Android means READ_CALENDAR and WRITE_CALENDAR together.
-        // Check both explicitly so a write-only grant fails here the way iOS
-        // does, instead of by whichever internal read happens to throw first.
-        if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
-            android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
+        fullAccessFailure(context)?.let { return Result.failure(it) }
 
         return try {
             if (timestamp != null) {
@@ -1183,19 +1156,7 @@ class EventsService(
         recurrenceRule: String?,
         patch: EventFieldPatch
     ): Result<String> {
-        // Full tier required (write-only covers only createEvent): on Android
-        // that means READ_CALENDAR and WRITE_CALENDAR together, matching iOS.
-        if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
-            android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
+        fullAccessFailure(context)?.let { return Result.failure(it) }
 
         return try {
             if (span != "allEvents" && span != "thisAndFollowing") {
@@ -1517,19 +1478,7 @@ class EventsService(
         timestamp: Long?,
         span: String
     ): Result<Unit> {
-        // Full tier required (write-only covers only createEvent): on Android
-        // that means READ_CALENDAR and WRITE_CALENDAR together, matching iOS.
-        if (android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) ||
-            android.content.pm.PackageManager.PERMISSION_GRANTED !=
-            context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR)) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
+        fullAccessFailure(context)?.let { return Result.failure(it) }
 
         return try {
             when (span) {
