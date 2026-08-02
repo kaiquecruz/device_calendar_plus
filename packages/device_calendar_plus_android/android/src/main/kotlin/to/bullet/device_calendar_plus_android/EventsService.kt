@@ -161,11 +161,8 @@ class EventsService(
         }
     }
     
-    // The cursor's projection is derived from the same [columns] object
-    // (EventColumns.projection), so every column here should be present.
-    // getColumnIndexOrThrow enforces that: if a property is ever added to
-    // EventColumns without updating its projection, the read fails loudly
-    // with the column name instead of misbehaving on index -1.
+    // Projection/read contract (why getColumnIndexOrThrow): see the
+    // EventColumns KDoc.
     private fun buildEventMapFromCursor(
         cursor: android.database.Cursor,
         columns: EventColumns
