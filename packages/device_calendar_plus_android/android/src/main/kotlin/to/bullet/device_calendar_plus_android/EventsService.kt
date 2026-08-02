@@ -162,26 +162,28 @@ class EventsService(
     }
     
     // The cursor's projection is derived from the same [columns] object
-    // (EventColumns.projection), so every index here is guaranteed present —
-    // a column can't silently go missing from the query.
+    // (EventColumns.projection), so every column here should be present.
+    // getColumnIndexOrThrow enforces that: if a property is ever added to
+    // EventColumns without updating its projection, the read fails loudly
+    // with the column name instead of misbehaving on index -1.
     private fun buildEventMapFromCursor(
         cursor: android.database.Cursor,
         columns: EventColumns
     ): Map<String, Any> {
-        val eventIdIndex = cursor.getColumnIndex(columns.eventId)
-        val calendarIdIndex = cursor.getColumnIndex(columns.calendarId)
-        val titleIndex = cursor.getColumnIndex(columns.title)
-        val descriptionIndex = cursor.getColumnIndex(columns.description)
-        val locationIndex = cursor.getColumnIndex(columns.location)
-        val startIndex = cursor.getColumnIndex(columns.start)
-        val endIndex = cursor.getColumnIndex(columns.end)
-        val allDayIndex = cursor.getColumnIndex(columns.allDay)
-        val availabilityIndex = cursor.getColumnIndex(columns.availability)
-        val statusIndex = cursor.getColumnIndex(columns.status)
-        val timeZoneIndex = cursor.getColumnIndex(columns.timeZone)
-        val recurrenceRuleIndex = cursor.getColumnIndex(columns.recurrenceRule)
-        val urlIndex = cursor.getColumnIndex(columns.url)
-        val eventColorIndex = cursor.getColumnIndex(columns.eventColor)
+        val eventIdIndex = cursor.getColumnIndexOrThrow(columns.eventId)
+        val calendarIdIndex = cursor.getColumnIndexOrThrow(columns.calendarId)
+        val titleIndex = cursor.getColumnIndexOrThrow(columns.title)
+        val descriptionIndex = cursor.getColumnIndexOrThrow(columns.description)
+        val locationIndex = cursor.getColumnIndexOrThrow(columns.location)
+        val startIndex = cursor.getColumnIndexOrThrow(columns.start)
+        val endIndex = cursor.getColumnIndexOrThrow(columns.end)
+        val allDayIndex = cursor.getColumnIndexOrThrow(columns.allDay)
+        val availabilityIndex = cursor.getColumnIndexOrThrow(columns.availability)
+        val statusIndex = cursor.getColumnIndexOrThrow(columns.status)
+        val timeZoneIndex = cursor.getColumnIndexOrThrow(columns.timeZone)
+        val recurrenceRuleIndex = cursor.getColumnIndexOrThrow(columns.recurrenceRule)
+        val urlIndex = cursor.getColumnIndexOrThrow(columns.url)
+        val eventColorIndex = cursor.getColumnIndexOrThrow(columns.eventColor)
 
         val eventId = cursor.getString(eventIdIndex)
         val calendarId = cursor.getString(calendarIdIndex)

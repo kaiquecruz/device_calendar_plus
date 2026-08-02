@@ -29,23 +29,22 @@ internal data class EventColumns(
     val eventColor: String,
 ) {
     /** Query projection covering every column this preset reads. */
-    val projection: Array<String>
-        get() = arrayOf(
-            eventId,
-            calendarId,
-            title,
-            description,
-            location,
-            start,
-            end,
-            allDay,
-            availability,
-            status,
-            timeZone,
-            recurrenceRule,
-            url,
-            eventColor,
-        )
+    val projection: Array<String> = arrayOf(
+        eventId,
+        calendarId,
+        title,
+        description,
+        location,
+        start,
+        end,
+        allDay,
+        availability,
+        status,
+        timeZone,
+        recurrenceRule,
+        url,
+        eventColor,
+    )
 
     companion object {
         /** Columns for [CalendarContract.Instances] queries (expanded occurrences). */
