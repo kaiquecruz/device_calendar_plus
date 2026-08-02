@@ -69,9 +69,9 @@ class EventsService(
                 selectionArgs,
                 "${CalendarContract.Instances.BEGIN} ASC"
             )?.use { cursor ->
-                val beginIdx = cursor.getColumnIndex(columns.start)
-                val endIdx = cursor.getColumnIndex(columns.end)
-                val allDayIdx = cursor.getColumnIndex(columns.allDay)
+                val beginIdx = cursor.getColumnIndexOrThrow(columns.start)
+                val endIdx = cursor.getColumnIndexOrThrow(columns.end)
+                val allDayIdx = cursor.getColumnIndexOrThrow(columns.allDay)
 
                 while (cursor.moveToNext()) {
                     val eventBeginMillis = cursor.getLong(beginIdx)
