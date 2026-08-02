@@ -63,45 +63,82 @@ class PermissionService {
     }
   }
   
+  // Info.plist usage-description keys. The declaration checks and the error
+  // messages must name the same keys, so both go through these constants and
+  // the shared descriptionExample map.
+  private static let legacyUsageKey = "NSCalendarsUsageDescription"
+  private static let fullAccessUsageKey = "NSCalendarsFullAccessUsageDescription"
+  private static let writeOnlyUsageKey = "NSCalendarsWriteOnlyAccessUsageDescription"
+
+  private static let descriptionExamples: [String: String] = [
+    legacyUsageKey: "Access your calendar to view and manage events.",
+    fullAccessUsageKey: "Full access to view and edit your calendar events.",
+    writeOnlyUsageKey: "Add events without reading existing events.",
+  ]
+
   private func isDescriptionDeclared(_ key: String) -> Bool {
     let value = Bundle.main.object(forInfoDictionaryKey: key) as? String
     return !(value?.isEmpty ?? true)
   }
 
-  private func missingWriteOnlyDescriptionError() -> PermissionError {
-    var errorMessage = "Write-only calendar usage description not declared in Info.plist.\n\n"
-    errorMessage += "Add the following to ios/Runner/Info.plist:\n"
-    errorMessage += "<key>NSCalendarsWriteOnlyAccessUsageDescription</key>\n"
-    errorMessage += "<string>Add events without reading existing events.</string>"
+  private func missingDescriptionError(_ title: String, keys: [String]) -> PermissionError {
+    var errorMessage = "\(title) not declared in Info.plist.\n\n"
+    errorMessage += "Add the following to ios/Runner/Info.plist:"
+    for key in keys {
+      errorMessage += "\n<key>\(key)</key>"
+      errorMessage += "\n<string>\(PermissionService.descriptionExamples[key] ?? "")</string>"
+    }
 
     return PermissionError(code: PlatformExceptionCodes.permissionsNotDeclared, message: errorMessage)
   }
 
-  private func missingUsageDescriptionError() -> PermissionError {
-    var errorMessage = "Calendar usage description not declared in Info.plist.\n\n"
-    errorMessage += "Add the following to ios/Runner/Info.plist:\n"
-    errorMessage += "<key>NSCalendarsUsageDescription</key>\n"
-    errorMessage += "<string>Access your calendar to view and manage events.</string>\n"
-    errorMessage += "<key>NSCalendarsWriteOnlyAccessUsageDescription</key>\n"
-    errorMessage += "<string>Add events without reading existing events.</string>"
+  private func missingWriteOnlyDescriptionError() -> PermissionError {
+    missingDescriptionError(
+      "Write-only calendar usage description",
+      keys: [PermissionService.writeOnlyUsageKey])
+  }
 
-    return PermissionError(code: PlatformExceptionCodes.permissionsNotDeclared, message: errorMessage)
+  private func missingFullAccessDescriptionError() -> PermissionError {
+    missingDescriptionError(
+      "Full-access calendar usage description",
+      keys: [PermissionService.fullAccessUsageKey])
+  }
+
+  /// The no-keys-at-all error. Lists every key so following the advice once
+  /// satisfies both the status guard and any later request on any OS version —
+  /// naming only the legacy key would fix `hasPermissions` and then fail again
+  /// on an iOS 17+ request, which demands the tier-specific keys.
+  private func missingUsageDescriptionError() -> PermissionError {
+    missingDescriptionError(
+      "Calendar usage description",
+      keys: [
+        PermissionService.fullAccessUsageKey,
+        PermissionService.writeOnlyUsageKey,
+        PermissionService.legacyUsageKey,
+      ])
   }
 
   /// Verifies the Info.plist declares the usage description the request needs.
   ///
-  /// A write-only request on iOS 17+ goes through `requestWriteOnlyAccessToEvents`,
-  /// which **requires** `NSCalendarsWriteOnlyAccessUsageDescription` — without it
-  /// the OS raises an exception, so we surface a clear error instead of crashing.
-  /// Every other path uses `NSCalendarsUsageDescription`.
+  /// On iOS 17+ each request variant **requires** its own key: full access
+  /// (`requestFullAccessToEvents`) needs `NSCalendarsFullAccessUsageDescription`
+  /// and write-only needs `NSCalendarsWriteOnlyAccessUsageDescription` — the
+  /// legacy `NSCalendarsUsageDescription` no longer satisfies either, and
+  /// without the matching key the OS raises an exception, so we surface a
+  /// clear error instead of crashing. iOS 16 and below uses only the legacy key.
   private func checkUsageDescriptionDeclared(writeOnly: Bool) -> PermissionError? {
-    if writeOnly, #available(iOS 17.0, *) {
-      return isDescriptionDeclared("NSCalendarsWriteOnlyAccessUsageDescription")
-        ? nil : missingWriteOnlyDescriptionError()
+    if #available(iOS 17.0, *) {
+      if writeOnly {
+        return isDescriptionDeclared(PermissionService.writeOnlyUsageKey)
+          ? nil : missingWriteOnlyDescriptionError()
+      }
+      return isDescriptionDeclared(PermissionService.fullAccessUsageKey)
+        ? nil : missingFullAccessDescriptionError()
     }
 
-    return isDescriptionDeclared("NSCalendarsUsageDescription")
-      ? nil : missingUsageDescriptionError()
+    return isDescriptionDeclared(PermissionService.legacyUsageKey)
+      ? nil : missingDescriptionError(
+        "Calendar usage description", keys: [PermissionService.legacyUsageKey])
   }
   
   private func getCurrentPermissionStatus() -> String {
@@ -142,10 +179,12 @@ class PermissionService {
   
   func hasPermissions() -> Result<String, PermissionError> {
     // A status check triggers no prompt, so any declared calendar usage
-    // description — full or write-only — satisfies the configuration guard. An
-    // add-only app that declares only the write-only key can still check status.
-    guard isDescriptionDeclared("NSCalendarsUsageDescription")
-      || isDescriptionDeclared("NSCalendarsWriteOnlyAccessUsageDescription") else {
+    // description — legacy, full-access, or write-only — satisfies the
+    // configuration guard. An add-only app that declares only the write-only
+    // key can still check status.
+    guard isDescriptionDeclared(PermissionService.legacyUsageKey)
+      || isDescriptionDeclared(PermissionService.fullAccessUsageKey)
+      || isDescriptionDeclared(PermissionService.writeOnlyUsageKey) else {
       return .failure(missingUsageDescriptionError())
     }
 
@@ -160,11 +199,6 @@ class PermissionService {
     writeOnly: Bool,
     completion: @escaping (Result<String, PermissionError>) -> Void
   ) {
-    if let error = checkUsageDescriptionDeclared(writeOnly: writeOnly) {
-      completion(.failure(error))
-      return
-    }
-
     let currentStatus = getCurrentPermissionStatus()
 
     // Already hold a tier that satisfies the request? No prompt needed. Full
@@ -181,6 +215,15 @@ class PermissionService {
 
     if alreadySatisfied || terminal {
       completion(.success(currentStatus))
+      return
+    }
+
+    // The usage-description key is only needed once we actually fire an OS
+    // request, so the check sits after the early returns — an app that ships
+    // without the (iOS 17+) tier key must still get its already-granted or
+    // terminal status back rather than a configuration error.
+    if let error = checkUsageDescriptionDeclared(writeOnly: writeOnly) {
+      completion(.failure(error))
       return
     }
 

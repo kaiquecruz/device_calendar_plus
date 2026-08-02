@@ -452,8 +452,10 @@ class DeviceCalendar {
   ///
   /// Omit [calendarId] (or pass `null`) to write to the device's default
   /// calendar; on Android resolving that default reads the calendar list, so it
-  /// needs full access. A non-null but empty ID is an error, as is an [endDate]
-  /// before [startDate].
+  /// needs full access. iOS mirrors that limitation from the other side: under
+  /// write-only access only the default calendar is reachable, so a named
+  /// [calendarId] requires full access there. A non-null but empty ID is an
+  /// error, as is an [endDate] before [startDate].
   ///
   /// [recurrenceRule] makes the event recurring (see
   /// [doc/recurring-events.md](https://github.com/bullet-to/device_calendar_plus/blob/main/packages/device_calendar_plus/doc/recurring-events.md)).
@@ -870,8 +872,15 @@ class DeviceCalendar {
   ///
   /// All parameters are optional pre-fill values; the user can change anything
   /// before saving or cancelling. Useful for letting the user review, or to add
-  /// attendees (which can't be done programmatically). Works with write-only
-  /// access or full.
+  /// attendees (which can't be done programmatically).
+  ///
+  /// Needs no calendar permission on Android or iOS 17+ — the system editor
+  /// saves the event with its own access — so it also works as a fallback when
+  /// the user has denied access. Because it normally needs nothing,
+  /// [autoPermissions] never prompts for this method. On iOS 16 and below the
+  /// editor runs in-process and does require full access (request it with
+  /// [requestPermissions] first); without it this throws
+  /// [DeviceCalendarException] with [DeviceCalendarError.permissionDenied].
   Future<void> showCreateEventModal({
     String? title,
     DateTime? startDate,
@@ -894,7 +903,10 @@ class DeviceCalendar {
     final normalizedEnd =
         (isAllDay == true && endDate != null) ? _stripTime(endDate) : endDate;
 
-    await _ensurePermission(CalendarAccessLevel.writeOnly);
+    // Deliberately no _ensurePermission: the modal needs no calendar access on
+    // Android or iOS 17+, so gating (or auto-prompting) here would block the
+    // one path that still works after a denial. iOS 16 and below enforces its
+    // full-access requirement natively.
     try {
       await DeviceCalendarPlusPlatform.instance.showCreateEventModal(
         title: title,

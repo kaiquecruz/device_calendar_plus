@@ -1,15 +1,14 @@
 package to.bullet.device_calendar_plus_android
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.CalendarContract
-import androidx.core.content.ContextCompat
 
 class CalendarService(private val context: Context) {
-    
+
     fun listCalendars(): Result<List<Map<String, Any>>> {
+        readAccessFailure(context)?.let { return Result.failure(it) }
+
         val calendars = mutableListOf<Map<String, Any>>()
         
         val projection = arrayOf(
@@ -101,19 +100,8 @@ class CalendarService(private val context: Context) {
      * Reuses [listCalendars] so the writability definition stays in one place.
      */
     fun resolveDefaultWritableCalendarId(): Result<String?> {
-        // Picking a default reads the calendar list, so it needs READ_CALENDAR.
-        // Guard it explicitly: a denied read can surface as either a thrown
-        // SecurityException or a silently empty cursor, and only the explicit
-        // check distinguishes "can't read" from "genuinely no calendars".
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Reading calendars to resolve a default requires READ_CALENDAR"
-                )
-            )
-        }
+        // Picking a default reads the calendar list; listCalendars gates the
+        // read itself, and its failure propagates through the map.
         return listCalendars().map { calendars ->
             val writable = calendars.filter { it["readOnly"] == false }
             (writable.firstOrNull { it["isPrimary"] == true } ?: writable.firstOrNull())
@@ -122,6 +110,8 @@ class CalendarService(private val context: Context) {
     }
 
     fun listSources(): Result<List<Map<String, Any>>> {
+        readAccessFailure(context)?.let { return Result.failure(it) }
+
         val sources = mutableListOf<Map<String, Any>>()
         val seen = mutableSetOf<String>()
 
@@ -176,17 +166,8 @@ class CalendarService(private val context: Context) {
     }
 
     fun createCalendar(name: String, colorHex: String?, accountNameParam: String?, accountTypeParam: String?): Result<String> {
-        // Check for write calendar permission
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
-        
+        fullAccessFailure(context)?.let { return Result.failure(it) }
+
         val accountName = accountNameParam ?: "local"
         val accountType = accountTypeParam ?: CalendarContract.ACCOUNT_TYPE_LOCAL
         
@@ -250,17 +231,8 @@ class CalendarService(private val context: Context) {
     }
     
     fun updateCalendar(calendarId: String, name: String?, colorHex: String?): Result<Unit> {
-        // Check for write calendar permission
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
-        
+        fullAccessFailure(context)?.let { return Result.failure(it) }
+
         try {
             // Prepare values to update
             val values = android.content.ContentValues()
@@ -313,17 +285,8 @@ class CalendarService(private val context: Context) {
     }
     
     fun deleteCalendar(calendarId: String): Result<Unit> {
-        // Check for write calendar permission
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
-            return Result.failure(
-                CalendarException(
-                    PlatformExceptionCodes.PERMISSION_DENIED,
-                    "Calendar permission denied. Call requestPermissions() first."
-                )
-            )
-        }
-        
+        fullAccessFailure(context)?.let { return Result.failure(it) }
+
         try {
             val deletedRows = context.contentResolver.delete(
                 CalendarContract.Calendars.CONTENT_URI,

@@ -420,6 +420,18 @@ class EventsService {
   /// events (no default available is an error).
   private func resolveCalendar(calendarId: String?) -> Result<EKCalendar, CalendarError> {
     if let calendarId = calendarId {
+      // Under write-only access the store can't look calendars up at all
+      // (only defaultCalendarForNewEvents is reachable), so a named ID is a
+      // permission problem before it's a lookup problem — checking up front
+      // states that contract directly instead of inferring it from a nil
+      // lookup, and spares the caller a phantom "not found".
+      guard permissionService.hasPermission(for: .full) else {
+        return .failure(CalendarError(
+          code: PlatformExceptionCodes.permissionDenied,
+          message: "Targeting a calendar by ID requires full calendar access. "
+            + "With write-only access, omit calendarId to use the default calendar."
+        ))
+      }
       guard let calendar = eventStore.calendar(withIdentifier: calendarId) else {
         return .failure(CalendarError(
           code: PlatformExceptionCodes.notFound,
@@ -566,12 +578,19 @@ class EventsService {
     availability: String?,
     completion: @escaping (Result<EKEvent?, CalendarError>) -> Void
   ) {
-    guard permissionService.hasPermission(for: .full) else {
-      completion(.failure(CalendarError(
-        code: PlatformExceptionCodes.permissionDenied,
-        message: "Calendar permission denied. Call requestPermissions() first."
-      )))
-      return
+    // On iOS 17+ no calendar access is needed: EKEventEditViewController runs
+    // out of process and reaches the user's calendars itself. Below 17 the
+    // editor runs in-process and presents unusable without an authorized
+    // store, so the gate stays there (pre-17 access has no write-only tier —
+    // authorized means full).
+    if #unavailable(iOS 17.0) {
+      guard permissionService.hasPermission(for: .full) else {
+        completion(.failure(CalendarError(
+          code: PlatformExceptionCodes.permissionDenied,
+          message: "Calendar permission denied. Call requestPermissions() first."
+        )))
+        return
+      }
     }
 
     // If all params are nil, return nil so the editor opens blank

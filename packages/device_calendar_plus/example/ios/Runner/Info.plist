@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCalendarsUsageDescription</key>
 	<string>This app needs access to your calendar to demonstrate calendar functionality.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>This app needs full access to your calendar to demonstrate calendar functionality.</string>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>This app needs write access to your calendar to add events.</string>
 	<key>UIApplicationSceneManifest</key>
