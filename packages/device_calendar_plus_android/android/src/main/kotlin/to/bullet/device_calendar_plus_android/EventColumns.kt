@@ -47,24 +47,6 @@ internal data class EventColumns(
     )
 
     companion object {
-        /** Columns for [CalendarContract.Instances] queries (expanded occurrences). */
-        val instances = EventColumns(
-            eventId = CalendarContract.Instances.EVENT_ID,
-            calendarId = CalendarContract.Instances.CALENDAR_ID,
-            title = CalendarContract.Instances.TITLE,
-            description = CalendarContract.Instances.DESCRIPTION,
-            location = CalendarContract.Instances.EVENT_LOCATION,
-            start = CalendarContract.Instances.BEGIN,
-            end = CalendarContract.Instances.END,
-            allDay = CalendarContract.Instances.ALL_DAY,
-            availability = CalendarContract.Instances.AVAILABILITY,
-            status = CalendarContract.Instances.STATUS,
-            timeZone = CalendarContract.Instances.EVENT_TIMEZONE,
-            recurrenceRule = CalendarContract.Instances.RRULE,
-            url = CalendarContract.Instances.CUSTOM_APP_URI,
-            eventColor = CalendarContract.Instances.EVENT_COLOR,
-        )
-
         /** Columns for [CalendarContract.Events] queries (master event rows). */
         val events = EventColumns(
             eventId = CalendarContract.Events._ID,
@@ -81,6 +63,18 @@ internal data class EventColumns(
             recurrenceRule = CalendarContract.Events.RRULE,
             url = CalendarContract.Events.CUSTOM_APP_URI,
             eventColor = CalendarContract.Events.EVENT_COLOR,
+        )
+
+        /**
+         * Columns for [CalendarContract.Instances] queries (expanded
+         * occurrences). The Instances URI shares the Events column names
+         * (Instances implements EventsColumns) except for the row ID and the
+         * occurrence window, so only those three differ from [events].
+         */
+        val instances = events.copy(
+            eventId = CalendarContract.Instances.EVENT_ID,
+            start = CalendarContract.Instances.BEGIN,
+            end = CalendarContract.Instances.END,
         )
     }
 }
