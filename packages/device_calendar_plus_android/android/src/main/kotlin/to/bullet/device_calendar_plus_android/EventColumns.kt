@@ -1,0 +1,87 @@
+package to.bullet.device_calendar_plus_android
+
+import android.provider.CalendarContract
+
+/**
+ * Column-name preset for `EventsService.buildEventMapFromCursor`.
+ *
+ * The Instances and Events content URIs expose the same event data under
+ * different column names (EVENT_ID vs _ID, BEGIN vs DTSTART, ...). Each query
+ * picks the matching preset and derives its projection from it, so the
+ * projection and the cursor reads can't silently diverge. Adding a read-only
+ * field touches one property here plus the read in buildEventMapFromCursor —
+ * instead of a new parameter, an index lookup, and two call-site edits.
+ */
+internal data class EventColumns(
+    val eventId: String,
+    val calendarId: String,
+    val title: String,
+    val description: String,
+    val location: String,
+    val start: String,
+    val end: String,
+    val allDay: String,
+    val availability: String,
+    val status: String,
+    val timeZone: String,
+    val recurrenceRule: String,
+    val url: String,
+    val eventColor: String,
+) {
+    /** Query projection covering every column this preset reads. */
+    val projection: Array<String>
+        get() = arrayOf(
+            eventId,
+            calendarId,
+            title,
+            description,
+            location,
+            start,
+            end,
+            allDay,
+            availability,
+            status,
+            timeZone,
+            recurrenceRule,
+            url,
+            eventColor,
+        )
+
+    companion object {
+        /** Columns for [CalendarContract.Instances] queries (expanded occurrences). */
+        val instances = EventColumns(
+            eventId = CalendarContract.Instances.EVENT_ID,
+            calendarId = CalendarContract.Instances.CALENDAR_ID,
+            title = CalendarContract.Instances.TITLE,
+            description = CalendarContract.Instances.DESCRIPTION,
+            location = CalendarContract.Instances.EVENT_LOCATION,
+            start = CalendarContract.Instances.BEGIN,
+            end = CalendarContract.Instances.END,
+            allDay = CalendarContract.Instances.ALL_DAY,
+            availability = CalendarContract.Instances.AVAILABILITY,
+            status = CalendarContract.Instances.STATUS,
+            timeZone = CalendarContract.Instances.EVENT_TIMEZONE,
+            recurrenceRule = CalendarContract.Instances.RRULE,
+            url = CalendarContract.Instances.CUSTOM_APP_URI,
+            eventColor = CalendarContract.Instances.EVENT_COLOR,
+        )
+
+        /** Columns for [CalendarContract.Events] queries (master event rows). */
+        val events = EventColumns(
+            eventId = CalendarContract.Events._ID,
+            calendarId = CalendarContract.Events.CALENDAR_ID,
+            title = CalendarContract.Events.TITLE,
+            description = CalendarContract.Events.DESCRIPTION,
+            location = CalendarContract.Events.EVENT_LOCATION,
+            start = CalendarContract.Events.DTSTART,
+            end = CalendarContract.Events.DTEND,
+            allDay = CalendarContract.Events.ALL_DAY,
+            availability = CalendarContract.Events.AVAILABILITY,
+            status = CalendarContract.Events.STATUS,
+            timeZone = CalendarContract.Events.EVENT_TIMEZONE,
+            recurrenceRule = CalendarContract.Events.RRULE,
+            url = CalendarContract.Events.CUSTOM_APP_URI,
+            eventColor = CalendarContract.Events.EVENT_COLOR,
+        )
+    }
+}
