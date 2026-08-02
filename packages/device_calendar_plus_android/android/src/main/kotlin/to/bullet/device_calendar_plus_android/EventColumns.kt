@@ -9,8 +9,11 @@ import android.provider.CalendarContract
  * different column names (EVENT_ID vs _ID, BEGIN vs DTSTART, ...). Each query
  * picks the matching preset and derives its projection from it, so the
  * projection and the cursor reads can't silently diverge. Adding a read-only
- * field touches one property here plus the read in buildEventMapFromCursor —
- * instead of a new parameter, an index lookup, and two call-site edits.
+ * field is a handful of colocated edits — the property, the preset value, the
+ * projection entry, and the read in buildEventMapFromCursor — each either
+ * compile-enforced (no default args) or loud at runtime
+ * (getColumnIndexOrThrow), instead of scattered call-site edits that could
+ * silently drift apart.
  */
 internal data class EventColumns(
     val eventId: String,

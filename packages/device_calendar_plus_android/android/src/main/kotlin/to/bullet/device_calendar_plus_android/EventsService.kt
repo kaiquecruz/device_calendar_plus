@@ -67,7 +67,7 @@ class EventsService(
                 columns.projection,
                 selection,
                 selectionArgs,
-                "${CalendarContract.Instances.BEGIN} ASC"
+                "${columns.start} ASC"
             )?.use { cursor ->
                 val beginIdx = cursor.getColumnIndexOrThrow(columns.start)
                 val endIdx = cursor.getColumnIndexOrThrow(columns.end)
